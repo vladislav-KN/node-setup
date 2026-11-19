@@ -162,9 +162,10 @@ def discover(root=ROOT):
         fail("The legacy proxy Compose file must contain only its nginx service.")
     service = normalized["services"]["nginx"]
     expected_command = ["sh", "-c", 'rm -f /dev/shm/nginx.sock && exec nginx -g "daemon off;"']
-    allowed = {"image", "container_name", "network_mode", "restart", "command", "volumes"}
+    allowed = {"image", "container_name", "network_mode", "restart", "command", "entrypoint", "volumes"}
     if (set(service) - allowed or service.get("container_name") != PROXY
             or service.get("network_mode") != "host" or service.get("command") != expected_command
+            or service.get("entrypoint") is not None
             or proxy["Config"].get("Cmd") != expected_command
             or proxy["Config"].get("Entrypoint") != ["/docker-entrypoint.sh"]):
         fail("Unsupported custom proxy Compose settings.")
@@ -483,6 +484,12 @@ def main():
             migrate(plan)
     except (installer.InstallError, EOFError, KeyboardInterrupt) as exc:
         print("STOPPED: " + (str(exc) if isinstance(exc, installer.InstallError) else "Input interrupted."), file=sys.stderr)
+        return 1
+    except (OSError, http.client.HTTPException) as exc:
+        print("STOPPED: File/HTTPS check failed: " + str(exc), file=sys.stderr)
+        return 1
+    except (ValueError, KeyError):
+        print("STOPPED: Unsupported or invalid local/Docker configuration.", file=sys.stderr)
         return 1
     return 0
 
