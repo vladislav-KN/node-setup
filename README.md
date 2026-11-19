@@ -14,7 +14,18 @@ sudo bash install.sh
 
 The installer asks for the domain, ACME email, panel `SECRET_KEY`, cover application, XHTTP/gRPC paths, certificate validation method, SSH port and optional BBR. Keys/tokens use hidden input and are saved with mode `0600`. Python 3 is bootstrapped when missing; normal runtime needs only its standard library.
 
-This is an installer, **not an in-place migration tool**. It refuses an existing NGINX node or containers owned by another stack. Existing nodes need a separate migration with backups. Reruns of this Caddy installation retain its certificate data and save previous configurations under `/opt/remnanode/backups`.
+`install.sh` is for fresh servers. It refuses an existing NGINX node or containers owned by another stack. Reruns of this Caddy installation retain its certificate data and save previous configurations under `/opt/remnanode/backups`.
+
+## Migrate an existing NGINX node
+
+The separate `migrate.sh` supports the **original single-domain node-setup layout**. Its default action is read-only. It stages Caddy on another Unix socket, backs up the old proxy and automatically rolls back on cutover failure. Remnanode and the cover container are not recreated. See the [migration guide](docs/MIGRATION_EN.md) ([Русский](docs/MIGRATION_RU.md)) for limits, Cloudflare mode and manual rollback.
+
+```bash
+sudo bash migrate.sh --check
+sudo bash migrate.sh --apply --email you@example.com
+```
+
+HTTPS may pause while Caddy obtains its certificate, for up to five minutes before automatic rollback. Custom NGINX configurations are refused for individual review. Public ACME issuance and a real VPN session must still be checked on the actual node.
 
 ## Traffic layout
 

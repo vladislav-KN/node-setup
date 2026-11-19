@@ -10,7 +10,7 @@ sudo bash install.sh
 
 安装器会询问域名、ACME 邮箱、面板提供的 `SECRET_KEY`、网站应用、XHTTP/gRPC 路径、证书验证方式、SSH 端口和可选 BBR。密钥隐藏输入，配置文件权限为 `0600`。必要时自动安装 Python 3；安装器本身只使用 Python 标准库。
 
-本脚本不会自动迁移现有 NGINX 节点。检测到旧安装或其他项目的容器时会停止。现有节点应单独备份和迁移。重复运行本 Caddy 安装会保留证书，并备份旧配置。
+`install.sh` 不会迁移现有 NGINX 节点。检测到旧安装或其他项目的容器时会停止。原版 node-setup 节点可使用独立的 `migrate.sh`，包含备份和自动回滚，详见[迁移指南（英语）](MIGRATION_EN.md)。重复运行本 Caddy 安装会保留证书，并备份旧配置。
 
 ## 流量和证书
 

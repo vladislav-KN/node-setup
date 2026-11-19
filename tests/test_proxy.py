@@ -148,6 +148,7 @@ class ProxyIntegration(unittest.TestCase):
         cls.log = open(cls.folder / "caddy.log", "wb")
         cls.process = subprocess.Popen([caddy_binary, "run", "--config", str(config)],
                                       cwd=cls.folder, stdout=cls.log, stderr=cls.log)
+        cls.addClassCleanup(cls.cleanup_fixture)
         for _ in range(80):
             if cls.process.poll() is not None:
                 cls.log.close()
@@ -175,11 +176,15 @@ class ProxyIntegration(unittest.TestCase):
     def tls(cls, alpn):
         raw = socket.socket(cls.front_network, socket.SOCK_STREAM)
         raw.settimeout(8)
-        raw.connect(cls.front_address)
-        raw.sendall(b"PROXY TCP4 198.51.100.23 203.0.113.10 50000 443\r\n")
-        context = ssl._create_unverified_context()  # Only this local, disposable test CA.
-        context.set_alpn_protocols([alpn])
-        return context.wrap_socket(raw, server_hostname="node.example.com")
+        try:
+            raw.connect(cls.front_address)
+            raw.sendall(b"PROXY TCP4 198.51.100.23 203.0.113.10 50000 443\r\n")
+            context = ssl._create_unverified_context()  # Only this local, disposable test CA.
+            context.set_alpn_protocols([alpn])
+            return context.wrap_socket(raw, server_hostname="node.example.com")
+        except BaseException:
+            raw.close()
+            raise
 
     def http(self, path, body=b""):
         with self.tls("http/1.1") as stream:
@@ -253,7 +258,7 @@ class ProxyIntegration(unittest.TestCase):
         connection.close()
 
     @classmethod
-    def tearDownClass(cls):
+    def cleanup_fixture(cls):
         cls.process.terminate()
         cls.process.wait(timeout=15)
         cls.log.close()
