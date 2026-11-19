@@ -27,7 +27,7 @@ jobs:
           mkdir -p "$RUNNER_TEMP/caddy-bin"
           curl -fsSL https://github.com/caddyserver/caddy/releases/download/v2.11.9/caddy_2.11.9_linux_amd64.tar.gz -o "$RUNNER_TEMP/caddy_2.11.9_linux_amd64.tar.gz"
           curl -fsSL https://github.com/caddyserver/caddy/releases/download/v2.11.9/caddy_2.11.9_checksums.txt -o "$RUNNER_TEMP/caddy_checksums.txt"
-          grep ' caddy_2.11.9_linux_amd64.tar.gz$' "$RUNNER_TEMP/caddy_checksums.txt" | (cd "$RUNNER_TEMP" && sha256sum -c -)
+          grep ' caddy_2.11.9_linux_amd64.tar.gz$' "$RUNNER_TEMP/caddy_checksums.txt" | (cd "$RUNNER_TEMP" && sha512sum -c -)
           tar -xzf "$RUNNER_TEMP/caddy_2.11.9_linux_amd64.tar.gz" -C "$RUNNER_TEMP/caddy-bin" caddy
           echo "$RUNNER_TEMP/caddy-bin" >> "$GITHUB_PATH"
       - name: Unit tests and Unix-socket protocol integration
