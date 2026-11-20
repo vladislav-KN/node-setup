@@ -102,7 +102,10 @@ def parse_legacy(text):
     settings = installer.Settings("admin@example.com", names[0].strip(), "unused",
                                   xhttp_path=paths[0], grpc_path=paths[1]).validate()
     expected = LEGACY_CONFIG.replace("DOMAIN", settings.domain).replace("XHTTP", settings.xhttp_path).replace("GRPC", settings.grpc_path)
-    if tokens(text) != tokens(expected):
+    # Some original installations omit both global log overrides. Accept that
+    # exact variant; do not ignore logging directives in arbitrary scopes.
+    without_log_overrides = expected.replace("access_log off; error_log /dev/null crit;", "", 1)
+    if tokens(text) not in (tokens(expected), tokens(without_log_overrides)):
         fail("Custom NGINX directives detected. No services changed; this configuration needs a separate migration.")
     return settings
 

@@ -14,6 +14,8 @@ No arguments also means check only. It reads Docker/NGINX settings and makes ord
 
 The supported proxy is `remnanode-proxy` in its own Compose project, using `/opt/remnanode/nginx/docker-compose.yml`, `nginx.conf`, `fullchain.pem` and `privkey.key`. Domain and transport paths are inferred. The cover backend must be published on `127.0.0.1:8080`; trusted TLS must work through `/dev/shm/nginx.sock` with PROXY protocol and the REALITY fallback on `127.0.0.1:443`.
 
+Both original-template variants are supported: with the global `access_log off;` / `error_log /dev/null crit;` prefix before `map`, or with both lines absent. Arbitrary logging directives and route changes are still refused.
+
 Extra server blocks, custom directives/routes/mounts or a different Compose layout are refused. Public-IP-only listeners, other REALITY targets and direct NGINX TLS arrangements need individual adaptation. NGINX inspection reads current files, not proof of their last reload; live HTTPS responses and a runnable rollback configuration are checked as well.
 
 ## Apply

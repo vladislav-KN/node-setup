@@ -64,6 +64,27 @@ class MigrationTests(unittest.TestCase):
         self.assertNotIn("2222", json.dumps(document))
         self.assertEqual(service["volumes"][0], str(folder / "caddy/config") + ":/etc/caddy:ro")
 
+    def test_accepts_reported_layout_without_global_log_overrides(self):
+        config = (ROOT / "tests/fixtures/nginx-without-log-overrides.conf").read_text()
+        settings = migrate.parse_legacy(config)
+        self.assertEqual(settings.domain, "node.example.com")
+        self.assertEqual(settings.xhttp_path, "/xhttppath/")
+        self.assertEqual(settings.grpc_path, "/grpcpath")
+        self.assertEqual(installer.caddy_config(settings), installer.caddy_config(self.plan["settings"]))
+
+    def test_missing_log_overrides_does_not_allow_custom_directives_or_routes(self):
+        config = (ROOT / "tests/fixtures/nginx-without-log-overrides.conf").read_text()
+        for modified in [
+            "access_log /var/log/custom.log;\n" + config,
+            "server_tokens off;\n" + config,
+            config.replace("server {", "server { access_log off; error_log /dev/null crit;", 1),
+            config.replace("proxy_pass http://127.0.0.1:8080;", "proxy_pass http://127.0.0.1:9000;"),
+            config.replace("ssl proxy_protocol;", "ssl;"),
+            config.replace("proxy_read_timeout 315s;", "proxy_read_timeout 10s;"),
+        ]:
+            with self.subTest(config=modified), self.assertRaises(installer.InstallError):
+                migrate.parse_legacy(modified)
+
     def test_backup_has_pinned_image_original_files_and_standalone_rollback(self):
         folder = self.root / "new"
         document = migrate.render(self.plan, folder, "unit-test")

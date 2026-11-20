@@ -55,11 +55,19 @@ class DockerMigration(unittest.TestCase):
         return result.stdout
 
     def test_live_cutover_legacy_restart_and_both_rollback_paths(self):
+        config = migrate.LEGACY_CONFIG.replace("DOMAIN", "node.example.com").replace("XHTTP", "/xhttppath/").replace("GRPC", "/grpcpath")
+        self.exercise_migration(config)
+
+    def test_live_migration_without_global_log_overrides(self):
+        self.exercise_migration((ROOT / "tests/fixtures/nginx-without-log-overrides.conf").read_text())
+
+    def exercise_migration(self, nginx_config):
         self.assertIsNotNone(shutil.which("openssl"))
         self.assertFalse(Path(installer.SOCKET_PATH).exists(), "Refuse to touch an existing selfsteal socket")
         # Abort before creating containers if the disposable runner's ports are busy.
         for port in (80, 443, 8080):
             with socket.socket() as handle:
+                handle.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 handle.bind(("127.0.0.1", port))
         tag = uuid.uuid4().hex[:10]
         proxy_name, node_name, cover_name = ("migration-proxy-" + tag, "migration-node-" + tag, "migration-cover-" + tag)
@@ -76,7 +84,7 @@ class DockerMigration(unittest.TestCase):
                           "-subj", "/CN=node.example.com", "-addext", "subjectAltName=DNS:node.example.com",
                           "-addext", "basicConstraints=critical,CA:TRUE", "-keyout", key, "-out", cert])
             os.chmod(key, 0o600)
-            (legacy / "nginx.conf").write_text(migrate.LEGACY_CONFIG.replace("DOMAIN", "node.example.com").replace("XHTTP", "/xhttppath/").replace("GRPC", "/grpcpath"))
+            (legacy / "nginx.conf").write_text(nginx_config)
             manifest = legacy / "docker-compose.yml"
             original = {"name": project, "services": {"nginx": {
                 "image": "nginx:1.28-alpine", "container_name": proxy_name, "network_mode": "host", "restart": "always",
